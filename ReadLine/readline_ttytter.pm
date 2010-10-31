@@ -1,3 +1,5 @@
+require 5.006;
+
 ##
 ## Term::Readline::Perl -> Term::Readline::TTYtter (Cameron Kaiser)
 ## it's much better.
@@ -62,7 +64,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0302';
+$VERSION = $VERSION = '1.1';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -1344,6 +1346,16 @@ sub rl_hook_background_control
 {
     $background_control = $main::child;
 }
+sub rl_hook_use_ansi
+# call to synchronize internal use of ANSI with the user's
+{
+    $use_ansi = $main::ansi;
+}
+sub rl_hook_no_counter
+# call to synchronize user preferences for counter (and prompts)
+{
+    $dont_use_counter = $main::dont_use_counter;
+}
 
 sub rl_bind
 {
@@ -1533,6 +1545,14 @@ sub readline_dumb {
 ##
 sub readline
 {
+
+    # UTF-8 locale? if so, prepare for Unicode from the keyboard (incomplete)
+    # nasty kludge for accounting for all the places this could be
+    $LANG = $ENV{'LANG'} || $ENV{'GDM_LANG'} || $ENV{'LC_CTYPE'} || $ENV{'ALL'}
+		|| '';
+    $UUTF8 = ($LANG =~ /UTF-?8/i) ? 1 : 0;
+    $ULATIN1 = ($LANG =~ /8859/) ? 1 : 0;
+
     $Term::ReadLine::TTYtter::term->register_Tk 
       if not $Term::ReadLine::registered and $Term::ReadLine::toloop
 	and defined &Tk::DoOneEvent;
@@ -1609,6 +1629,8 @@ sub readline
     $si = 0;			## Want line to start left-justified
     $force_redraw = 1;		## Want to display with brute force.
     $in_readline = 1;
+    $dont_use_counter ||= 0;
+    $ansi ||= 0;
     if (!eval {SetTTY()}) {	## Put into raw mode.
         warn $@ if $@;
         $dumb_term = 1;
@@ -1843,7 +1865,8 @@ sub substr_with_props {
   $s = substr $s, 0, $len - $lp;
   $p =~ s/^(\s*)//; my $bs = $1;
   $p =~ s/(\s*)$//; my $as = $1;
-  $p = $rl_term_set->[0] . $p . $rl_term_set->[1] if length $p;
+  $p = $rl_term_set->[0] . $p . $rl_term_set->[1]
+	if (length($p) && $use_ansi) ;
   $p = "$bs$p$as";
   $ket = chop $s if $ket;
   if (defined $bsel and $bsel != $esel) {
@@ -1857,12 +1880,15 @@ sub substr_with_props {
       (substr($s, 0, $bsel),
        substr($s, $bsel, $esel-$bsel),
        substr($s, $esel));
+    if ($use_ansi) {
     $pre  = $rl_term_set->[2] . $pre  . $rl_term_set->[3] if length $pre;
     $sel  = $rl_term_set->[4] . $sel  . $rl_term_set->[5] if length $sel;
     $post = $rl_term_set->[2] . $post . $rl_term_set->[3] if length $post;
+    }
     $s = "$pre$sel$post"
   } else {
-    $s = $rl_term_set->[2] . $s . $rl_term_set->[3] if length $s;
+    $s = $rl_term_set->[2] . $s . $rl_term_set->[3] if
+	(length($s) && $use_ansi);
   }
 
   if (!$lp) {			# Should not happen...
@@ -1870,8 +1896,10 @@ sub substr_with_props {
   } elsif (!length $s) {	# Should not happen
     return $p;
   } else {			# Do not underline spaces in the prompt
-    return "$p$s"
-      . (length $ket ? ($rl_term_set->[0] . $ket . $rl_term_set->[1]) : '');
+    return ("$p$s"
+      . (length $ket ? ($rl_term_set->[0] . $ket . $rl_term_set->[1]) : ''))
+    	if ($use_ansi);
+    return "$p$s$ket";
   }
 }
 
@@ -1972,9 +2000,9 @@ sub redisplay
     if ($D == length($prompt)) {
 	$si = 0;   ## display from the beginning....
     } elsif ($si >= $D) {	# point to the left
-	$si = &max(0, $D - $rl_margin - 5);
+	$si = &max(0, $D - $rl_margin - 7);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
-    } elsif ($si + $rl_screen_width - 5 <= $D) { # Point to the right
+    } elsif ($si + $rl_screen_width - 7 <= $D) { # Point to the right
 	$si = &min(length($dline), ($D - $rl_screen_width) + $rl_margin);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
     } elsif (length($dline) - $si < $rl_screen_width - $rl_margin and $si) {
@@ -1986,7 +2014,7 @@ sub redisplay
     }
     $have_bra = 1 if $si != 0; # Need the "chopped-off" marker
 
-    $thislen = &min(length($dline) - $si, $rl_screen_width - 5);
+    $thislen = &min(length($dline) - $si, $rl_screen_width - 7);
 # lengthy
     if ($si + $thislen < length($dline)) {
 	## need to place a '>'... make sure to place on first byte.
@@ -2024,7 +2052,9 @@ sub redisplay
     }
     # Now $dline is the part after the prompt...
 
-$dline = $dline." <".sprintf("%03i", length($line));
+# add our character counter, plus padding if we deleted a wide character
+$dline = $dline.($dont_use_counter ? '     ' :
+	(' <'.sprintf("%03i", length($line)))) . "  ";
 
     ##
     ## Now must output $dline, with cursor $delta spaces from left of TTY
@@ -2118,16 +2148,20 @@ sub min     { $_[0] < $_[1] ? $_[0] : $_[1]; }
 sub getc_hex { 
 # this is definitely the WRONG WAY to fix this non-UTF-8 safe code, but
 # it works with the really old moldy code and new stuff, so there it is.
-#
+# we use U0 when in a UTF-8 locale to help us on other systems like Ubuntu
+# and 10.6. systems like 10.4 (mostly) pass us UTF-8 regardless of locale.
 # we can't trust what we get from @Pending *or* rl_getc, so we need to
 # parse it all out.
-	my $w = (unpack("H*", (@Pending ? shift(@Pending) : &$rl_getc)));
+#
+	my $w = (unpack(
+	(($UUTF8) ? "U0H*" : "H*"), (@Pending ? shift(@Pending) : &$rl_getc)));
+	# Mac OS X 10.4 keeps inserting these spurious $16 characters.
 	return &getc_hex if ($w eq '16'); # recursive call
-	return $w if (length($w) == 2);
+	return $w if (length($w) == 2); # UNICODE
 	my $i;
 	my $j = '';
         for($i=0; $i<length($w); $i+=2) {
-		my $p = substr($w, $i, 2);
+		my $p = substr($w, $i, 2); # UNICODE
 		$j .= $p if ($p ne '16');
 	}
 	return $j;
@@ -2136,8 +2170,9 @@ sub getc_with_pending {
 # use our stubbed out getc_hex to safely return hex fragments of a UTF-8 char.
     my $wey = &getc_hex; # this could get any number of bytes. we accommodate.
     my $key = $wey;
-    my $i = hex(substr($key, 0, 2));
-    my $chars_in_seq  = ($i >= 194 && $i <= 223) ? 4 :
+    my $i = hex(substr($key, 0, 2)); 
+    my $chars_in_seq  = ($ULATIN1) ? 2 : 
+                        ($i >= 194 && $i <= 223) ? 4 :
 			($i >= 224 && $i <= 239) ? 6 :
 			($i >= 240 && $i <= 244) ? 8 : 2;
     while (length($key) < $chars_in_seq) {

@@ -2,7 +2,13 @@ TTYtter intro tackon:
 
 This is Term::ReadLine::TTYtter. It is a modified version of T::RL::Perl with
 several new nonstandard features specific to TTYtter, but may be useful for
-other applications:
+other applications.
+
+It also allows UTF-8 characters to be entered without crashing, and adds a
+counter so you can see how many characters you've entered (which is a big
+deal for Twitter and other microblogging platforms).
+
+These methods are additionally defined, which are non-standard:
 
 	removereadline method: erases the current prompt from the screen
 	redisplay method: repaints the current prompt on the screen
@@ -11,13 +17,20 @@ other applications:
 		sent signal 30 when a character is beginning processing
 		(i.e., the process needs to NOT write to the screen), and
 		31 when done (i.e., the process can write again).
+        hook_use_ansi: same, but connects to $main::ansi (1 = use ANSI,
+                0 = don't). thus, unlike T:RL:Perl, T:RL:TTYtter defaults to
+                ANSI *off*.
+        hook_no_counter: same, but connects to $main::dont_use_counter (1 =
+                disable counter). Useful for prompts where this is
+                irrelevant.
 
-It also allows UTF-8 characters to be entered without crashing, and adds a
-counter so you can see how many characters you've entered (which is a big
-deal for Twitter and other microblogging platforms).
+(The use of hooks into $main:: was so that the calling convention of
+&readline would not have to be disturbed to pass additional options.)
 
 Like T::RL::Perl, this is free software offered under the Perl Artistic
-License (see below).
+License (see below). Because of dueling licenses, it must be distributed
+separately from TTYtter (which is Floodgap Free Software License), and it
+can be used 100% separately from TTYtter as an entirely independent driver.
 
 Changes for T::RL::TTYtter (C)2010 Cameron Kaiser. All rights reserved.
 Send me your comments at ckaiser@floodgap.com

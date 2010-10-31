@@ -1,8 +1,8 @@
 package Term::ReadLine::TTYtter;
 use Carp;
-@ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::TTYtter::AU);
+@ISA = qw(Term::ReadLine::Stub Term::ReadLine::TTYtter::Compa Term::ReadLine::TTYtter::AU);
 
-$VERSION = $VERSION = 1.0;
+$VERSION = $VERSION = 1.1;
 
 sub readline {
   shift; 
@@ -99,6 +99,7 @@ sub SetTopHistory {
 	      setHistory => 1, addHistory => 1, preput => 1, 
 	      attribs => 1, 'newTTY' => 1, canRemoveReadline => 1,
               canRepaint => 1, canSetTopHistory => 1, canBackgroundSignal => 1,
+              canHookUseAnsi => 1, canHookNoCounter => 1,
 	      tkRunning => Term::ReadLine::Stub->Features->{'tkRunning'},
 	      ornaments => Term::ReadLine::Stub->Features->{'ornaments'},
 	     );
@@ -135,7 +136,7 @@ sub FETCH {
   $ {'readline_ttytter::rl_' . $name};
 }
 
-package Term::ReadLine::Compa;
+package Term::ReadLine::TTYtter::Compa;
 
 sub get_c {
   my $self = shift;

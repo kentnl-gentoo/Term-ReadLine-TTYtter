@@ -3,6 +3,7 @@
 # If argument starts with /dev, use it as console
 # If argument is '--no-print', do not print the result.
 
+require 5.006;
 BEGIN{ $ENV{PERL_RL} = 'TTYtter' };	# Do not test TR::Gnu !
 use Term::ReadLine;
 
@@ -30,10 +31,18 @@ if (!@ARGV) {
   $no_print = $ARGV[0] eq '--no-print';
 }
 $prompt = "Enter arithmetic or Perl expression: ";
-if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} | 0) > length $prompt) {
+if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
   $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
 }
 $OUT = $term->OUT || STDOUT;
+$IN = $term->IN || STDIN;
+binmode($OUT, ":utf8");
+binmode($IN, ":utf8");
+our $dont_use_counter = 0;
+our $ansi = 1;
+$term->hook_no_counter;
+$term->hook_use_ansi;
+
 %features = %{ $term->Features };
 if (%features) {
   @f = %features;

@@ -1,5 +1,12 @@
 -- as Term::ReadLine:TTYtter --
 1.0: initial release
+1.1: rl_hook_use_ansi to sync with $main::ansi and use/don't use ANSI
+       (done to avoid changes to readline's calling convention)
+     rl_hook_no_counter to sync with $main::dont_use_counter (ditto)
+       (done to avoid changes to readline's calling convention)
+     lots of UTF-8 fixes (tested on Mac OS X 10.4, 10.5 and Ubuntu 10.04)
+     repaired test.pl to be UTF-8 compliant, fix various warnings
+     Perl 5.6 set as minimum!
 
 -- as Term::ReadLine::Perl --
 0.2: Test added.
