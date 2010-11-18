@@ -7,6 +7,9 @@
      lots of UTF-8 fixes (tested on Mac OS X 10.4, 10.5 and Ubuntu 10.04)
      repaired test.pl to be UTF-8 compliant, fix various warnings
      Perl 5.6 set as minimum!
+1.2: DEL at position zero no longer aborts the line
+     fixed WINCH for changing window sizes (thanks Frank Doepper for patch);
+	now background safe
 
 -- as Term::ReadLine::Perl --
 0.2: Test added.

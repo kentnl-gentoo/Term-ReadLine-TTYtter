@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Term-ReadLine-TTYtter
-version:            1.1
+version:            1.2
 abstract:           A Term::ReadLine driver based on Term::ReadLine::Perl, with special features for microblogging and the TTYtter client (q.v).
 author:
     - Cameron Kaiser <ckaiser@floodgap.com>

@@ -64,7 +64,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.1';
+$VERSION = $VERSION = '1.2';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -414,8 +414,11 @@ $rl_getc = \&rl_getc;
 
 sub get_window_size
 {
+    return unless (-t $term_OUT);
+
     my $sig = shift;
     my ($num_cols,$num_rows);
+    local($., $@, $!, $^E, $?);
 
     if (defined $term_readkey) {
 	 ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
@@ -436,7 +439,7 @@ sub get_window_size
       eval {&$hook()}; warn $@ if $@ and $^W;
     }
     local $^W = 0;		# WINCH may be illegal...
-    $SIG{'WINCH'} = "readline::get_window_size";
+    $SIG{'WINCH'} = "readline_ttytter::get_window_size";
 }
 
 # Fix: case-sensitivity of inputrc on/off keywords in
@@ -2053,7 +2056,7 @@ sub redisplay
     # Now $dline is the part after the prompt...
 
 # add our character counter, plus padding if we deleted a wide character
-$dline = $dline.($dont_use_counter ? '     ' :
+$dline = $dline.($dont_use_counter ? '       ' :
 	(' <'.sprintf("%03i", length($line)))) . "  ";
 
     ##
@@ -2155,6 +2158,7 @@ sub getc_hex {
 #
 	my $w = (unpack(
 	(($UUTF8) ? "U0H*" : "H*"), (@Pending ? shift(@Pending) : &$rl_getc)));
+#print $term_OUT "\nsequence: $w\n";
 	# Mac OS X 10.4 keeps inserting these spurious $16 characters.
 	return &getc_hex if ($w eq '16'); # recursive call
 	return $w if (length($w) == 2); # UNICODE
@@ -2829,7 +2833,8 @@ sub F_DeleteChar
     my $count = shift;
     return F_DeleteBackwardChar(-$count) if $count < 0;
     if (length($line) == 0) {	# EOF sent (probably OK in DOS too)
-	$AcceptLine = $ReturnEOF = 1 if $lastcommand ne 'F_DeleteChar';
+        # I hate this and it annoys people, so I'm turning it off. Cameron
+	#$AcceptLine = $ReturnEOF = 1 if $lastcommand ne 'F_DeleteChar';
 	return;
     }
     if ($D == length ($line))
