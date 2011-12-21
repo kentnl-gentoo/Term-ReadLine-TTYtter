@@ -10,6 +10,9 @@
 1.2: DEL at position zero no longer aborts the line
      fixed WINCH for changing window sizes (thanks Frank Doepper for patch);
 	now background safe
+1.2.1: asks POSIX.pm if available for SIGUSR1 signal (uses 30 if not) to fix
+	problems with Linux 3.x kernels
+       ^D maps to /quit
 
 -- as Term::ReadLine::Perl --
 0.2: Test added.

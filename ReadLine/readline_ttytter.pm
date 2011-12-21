@@ -47,6 +47,9 @@ my $usestty = 1;
 my $max_include_depth = 10;     # follow $include's in init files this deep
 my $background_control = 0;     # see hook_background_control
 
+eval 'use POSIX; $readline_ttytter::SIGUSR1 = POSIX::SIGUSR1';
+$SIGUSR1 ||= 30;
+
 BEGIN {			# Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
 }
@@ -64,7 +67,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.2';
+$VERSION = $VERSION = '1.3';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -1705,6 +1708,11 @@ sub readline
 	## get a character of input (this can be UTF-8 now)
 	$input = &getc_with_pending(); # bug in debugger, returns 42. - No more!
 
+        if (unpack("H*", $input) eq '04' && $rl_first_char) { # CTRL-D
+		$AcceptLine = $ReturnEOF = 1;
+		last;
+	}
+
 	unless (defined $input) {
 	  # XXX What to do???  Until this is clear, just pretend we got EOF
 	  $AcceptLine = $ReturnEOF = 1;
@@ -1714,7 +1722,7 @@ sub readline
 
 	$ThisCommandKilledText = 0;
 	##print "\n\rline is @$D:[$line]\n\r"; ##DEBUG
-	kill(30, $background_control) if ($background_control);
+	kill($SIGUSR1, $background_control) if ($background_control);
 
 	my $cmd = get_command($var_EditingMode, ord($input));
 	if ( $rl_first_char && $cmd =~ /^F_(SelfInsert$|Yank)/
@@ -1737,7 +1745,7 @@ sub readline
 
 	&redisplay();
 	$LastCommandKilledText = $ThisCommandKilledText;
-	kill(30, $background_control) if ($background_control);
+	kill($SIGUSR1, $background_control) if ($background_control);
     }
 
     $in_readline = 0;
