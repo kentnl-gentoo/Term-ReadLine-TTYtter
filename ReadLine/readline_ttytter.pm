@@ -67,7 +67,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.3';
+$VERSION = $VERSION = '1.4';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -1362,6 +1362,17 @@ sub rl_hook_no_counter
 {
     $dont_use_counter = $main::dont_use_counter;
 }
+sub rl_hook_no_tco
+# call to synchronize using t.co length computations. this is a little
+# different. by default we do NOT so this can be used for other applications.
+# if TTYtter has notco NOT set, then we turn on t.co length computations when
+# this is called (and vice versa). if this is never called, t.co length
+# computation is never used (so don't call it if this is not a Twitter client).
+# we then use TTYtter's internal tco logic so upgrading that doesn't need
+# a T:RL:T update too.
+{
+    $do_tco = ($main::notco) ? 0 : $main::tco_sub;
+}
 
 sub rl_bind
 {
@@ -1636,6 +1647,7 @@ sub readline
     $force_redraw = 1;		## Want to display with brute force.
     $in_readline = 1;
     $dont_use_counter ||= 0;
+    $do_tco ||= 0;
     $ansi ||= 0;
     if (!eval {SetTTY()}) {	## Put into raw mode.
         warn $@ if $@;
@@ -1922,6 +1934,12 @@ sub redisplay_high {
   $force_redraw = 1;
 }
 
+## compute the displayed length of the line. affected by $do_tco.
+sub dlength {
+  my $x = shift;
+  return ($do_tco) ? length(&$do_tco($x)) : length($x);
+}
+
 ##
 ## redisplay()
 ##
@@ -2065,7 +2083,7 @@ sub redisplay
 
 # add our character counter, plus padding if we deleted a wide character
 $dline = $dline.($dont_use_counter ? '       ' :
-	(' <'.sprintf("%03i", length($line)))) . "  ";
+	(' <'.sprintf("%03i", &dlength($line)))) . "  ";
 
     ##
     ## Now must output $dline, with cursor $delta spaces from left of TTY

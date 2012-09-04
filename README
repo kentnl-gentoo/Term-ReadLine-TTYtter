@@ -14,15 +14,16 @@ These methods are additionally defined, which are non-standard:
 	redisplay method: repaints the current prompt on the screen
 	hook_background_control method: connects the interactive readline
 		prompt to a PID specified by $main::child. The PID is then
-		sent signal 30 when a character is beginning processing
+		sent signal SIGUSR1 when a character is beginning processing
 		(i.e., the process needs to NOT write to the screen), and
-		31 when done (i.e., the process can write again).
+		SIGUSR2 when done (i.e., the process can write again).
         hook_use_ansi: same, but connects to $main::ansi (1 = use ANSI,
                 0 = don't). thus, unlike T:RL:Perl, T:RL:TTYtter defaults to
                 ANSI *off*.
         hook_no_counter: same, but connects to $main::dont_use_counter (1 =
                 disable counter). Useful for prompts where this is
                 irrelevant.
+	hook_no_tco: this is Twitter specific. See code.
 
 (The use of hooks into $main:: was so that the calling convention of
 &readline would not have to be disturbed to pass additional options.)

@@ -2,7 +2,7 @@ package Term::ReadLine::TTYtter;
 use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::TTYtter::Compa Term::ReadLine::TTYtter::AU);
 
-$VERSION = $VERSION = 1.3;
+$VERSION = $VERSION = 1.4;
 
 sub readline {
   shift; 
