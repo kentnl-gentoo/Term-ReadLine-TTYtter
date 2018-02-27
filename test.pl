@@ -10,26 +10,9 @@ use Term::ReadLine;
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };
 
-my $ev;
-if ($ENV{$ev = 'AUTOMATED_TESTING'} or $ENV{$ev = 'PERL_MM_NONINTERACTIVE'}) {
-  print "1..0 # skip: \$ENV{$ev} is TRUE\n";
-  exit;
-}
+open(IN, '<', './t/input.txt') or die "Can't open input.txt, $@, $!";
+$term = Term::ReadLine->new('Simple Perl calc', \*IN, \*STDOUT);
 
-if (!@ARGV) {
-  $term = new Term::ReadLine 'Simple Perl calc';
-} elsif (@ARGV == 2) {
-  open(IN,"<$ARGV[0]");
-  open(OUT,">$ARGV[1]");
-  $term = new Term::ReadLine 'Simple Perl calc', \*IN, \*OUT;
-} elsif ($ARGV[0] =~ m|^/dev|) {
-  open(IN,"<$ARGV[0]");
-  open(OUT,">$ARGV[0]");
-  $term = new Term::ReadLine 'Simple Perl calc', \*IN, \*OUT;
-} else {
-  $term = new Term::ReadLine 'Simple Perl calc', \*STDIN, \*STDOUT;
-  $no_print = $ARGV[0] eq '--no-print';
-}
 $prompt = "Enter arithmetic or Perl expression: ";
 if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
   $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
@@ -60,7 +43,7 @@ print $OUT <<EOP;
 	this word should be already entered.)
 
 EOP
-while ( defined ($_ = $term->readline($prompt, "exit")) ) {
+while ( defined ($_ = $term->readline($prompt)) ) {
   $res = eval($_);
   warn $@ if $@;
   print $OUT $res, "\n" unless $@ or $no_print;

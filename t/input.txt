@@ -1,0 +1,2 @@
+printf "input ok: sqrt(42)^2 == %20.20f", sqrt(42) * sqrt(42);
+exit 0
